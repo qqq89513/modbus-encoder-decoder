@@ -119,7 +119,7 @@ void _error_print(modbus_t *ctx, const char *context)
   }
 }
 
-/** Generate a modbus RTU payload for read coils and stored it in ADU
+/** Generate a modbus RTU payload to read coils and stored it in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of bits(coils)
@@ -145,7 +145,7 @@ int modbus_read_bits_gen(int unit, int addr, int nb, uint8_t *ADU){
   return len;
 }
 
-/** Generate a modbus RTU payload for read discretes and stored it in ADU
+/** Generate a modbus RTU payload to read discretes and stored it in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of bits(discretes)
@@ -172,6 +172,11 @@ int modbus_read_input_bits_gen(int unit, int addr, int nb, uint8_t *ADU){
 
 }
 
+/** Generate a modbus RTU payload to read holding registers and stored it in ADU
+ * @param unit: Unit of slave, aka additional address
+ * @param addr: Start from this physical address (0~65535)
+ * @param nb: Quantity of words(registers, 2 bytes)
+*/
 int modbus_read_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
   int len = 0;  // The length of ADU
 
@@ -191,8 +196,30 @@ int modbus_read_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
   len = _calcCRC(ADU, len);
   
   return len;
-
 }
-int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
 
+/** Generate a modbus RTU payload to read input registers and stored it in ADU
+ * @param unit: Unit of slave, aka additional address
+ * @param addr: Start from this physical address (0~65535)
+ * @param nb: Quantity of words(registers, 2 bytes)
+*/
+int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
+  int len = 0;  // The length of ADU
+
+  // Check parameters  
+  if (nb > MODBUS_MAX_READ_REGISTERS) {
+    if (MODBUS_DEBUG) {
+      fprintf(stderr,
+              "ERROR Too many registers requested (%d > %d)\n",
+              nb, MODBUS_MAX_READ_REGISTERS);
+    }
+    errno = EMBMDATA;
+    return -1;
+  }
+
+  // Payload generation
+  len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_READ_INPUT_REGISTERS, addr, nb, ADU);
+  len = _calcCRC(ADU, len);
+  
+  return len;
 }
