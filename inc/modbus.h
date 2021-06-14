@@ -7,6 +7,8 @@
 #ifndef MODBUS_H
 #define MODBUS_H
 
+#define MODBUS_DEBUG 1
+
 #include <stdint.h>
 
 #ifdef  __cplusplus
@@ -148,33 +150,15 @@ typedef enum
     MODBUS_ERROR_RECOVERY_PROTOCOL      = (1<<2)
 } modbus_error_recovery_mode;
 
-int modbus_set_slave(modbus_t* ctx, int slave);
-int modbus_get_slave(modbus_t* ctx);
-int modbus_set_error_recovery(modbus_t *ctx, modbus_error_recovery_mode error_recovery);
-int modbus_set_socket(modbus_t *ctx, int s);
-int modbus_get_socket(modbus_t *ctx);
-
-int modbus_get_response_timeout(modbus_t *ctx, uint32_t *to_sec, uint32_t *to_usec);
-int modbus_set_response_timeout(modbus_t *ctx, uint32_t to_sec, uint32_t to_usec);
-
-int modbus_get_byte_timeout(modbus_t *ctx, uint32_t *to_sec, uint32_t *to_usec);
-int modbus_set_byte_timeout(modbus_t *ctx, uint32_t to_sec, uint32_t to_usec);
-
-int modbus_get_indication_timeout(modbus_t *ctx, uint32_t *to_sec, uint32_t *to_usec);
-int modbus_set_indication_timeout(modbus_t *ctx, uint32_t to_sec, uint32_t to_usec);
-
-int modbus_get_header_length(modbus_t *ctx);
-
-int modbus_connect(modbus_t *ctx);
-void modbus_close(modbus_t *ctx);
-
-void modbus_free(modbus_t *ctx);
-
-int modbus_flush(modbus_t *ctx);
-int modbus_set_debug(modbus_t *ctx, int flag);
-
 const char *modbus_strerror(int errnum);
 
+// Functions for payload generation -----------------------------
+int modbus_read_bits_gen(int unit, int addr, int nb, uint8_t *ADU);
+int modbus_read_input_bits_gen(int unit, int addr, int nb, uint8_t *ADU);
+int modbus_read_registers_gen(int unit, int addr, int nb, uint16_t *ADU);
+int modbus_read_input_registers_gen(int unit, int addr, int nb, uint16_t *ADU);
+
+/* From libmodbus
 int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);
 int modbus_read_input_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);
 int modbus_read_registers(modbus_t *ctx, int addr, int nb, uint16_t *dest);
@@ -209,6 +193,7 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                             int req_length, modbus_mapping_t *mb_mapping);
 int modbus_reply_exception(modbus_t *ctx, const uint8_t *req,
                                       unsigned int exception_code);
+*/
 
 /**
  * UTILS FUNCTIONS
