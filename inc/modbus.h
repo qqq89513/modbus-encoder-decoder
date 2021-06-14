@@ -155,8 +155,8 @@ const char *modbus_strerror(int errnum);
 // Functions for payload generation -----------------------------
 int modbus_read_bits_gen(int unit, int addr, int nb, uint8_t *ADU);
 int modbus_read_input_bits_gen(int unit, int addr, int nb, uint8_t *ADU);
-int modbus_read_registers_gen(int unit, int addr, int nb, uint16_t *ADU);
-int modbus_read_input_registers_gen(int unit, int addr, int nb, uint16_t *ADU);
+int modbus_read_registers_gen(int unit, int addr, int nb, uint8_t *ADU);
+int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU);
 
 /* From libmodbus
 int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);
