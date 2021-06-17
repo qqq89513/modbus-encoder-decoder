@@ -5,6 +5,7 @@
 
 int main(){
   uint8_t payload[128];
+  uint8_t data[] = {1,0,0,0,0,1,0,0, 0,0,1,0,0,0,0,1};
   int len = 0;
   
   // len = modbus_read_bits_gen(0, 0x1234, 0x45, payload);
@@ -12,7 +13,9 @@ int main(){
   // len = modbus_read_registers_gen(0, 0x1234, 0x45, payload);
   // len = modbus_read_input_registers_gen(0x32, 0x1234, 0x45, payload);
   // len = modbus_write_bit_gen(0x12, 0x1234, TRUE, payload);
-  len = modbus_write_register_gen(0x76, 0x5678, 0x2233, payload);
+  // len = modbus_write_register_gen(0x76, 0x5678, 0x2233, payload);
+  len = modbus_write_bits_gen(0x56, 0x1234, sizeof(data), data, payload);
+  printf("sizeof(data)=%d\n", sizeof(data));
   printf("payload[]=0x");
   for(int i=0; i<len; i++){
     printf("%02X", payload[i]);

@@ -253,3 +253,54 @@ int modbus_write_register_gen(int unit, int addr, const uint16_t value, uint8_t 
   return len;
 }
 
+/** Generate a modbus RTU payload to write bits to multiple coil statuses and stored it in ADU
+ * @param unit: Unit of slave, aka additional address
+ * @param addr: Start from this physical address (0~65535)
+ * @param nb: Quantity of bits (coils)
+ * @param data[]: Bits to write. A byte array, 1 byte for 1 boolean
+*/
+int modbus_write_bits_gen(int unit, int addr, int nb, const uint8_t data[], uint8_t *ADU){
+  int byte_count;
+  int len;
+  int bit_check = 0;
+  int pos = 0;
+
+  // Check parameters  
+  if (nb > MODBUS_MAX_WRITE_BITS) {
+    if (MODBUS_DEBUG) {
+      fprintf(stderr, "ERROR Writing too many bits (%d > %d)\n",
+              nb, MODBUS_MAX_WRITE_BITS);
+    }
+    errno = EMBMDATA;
+    return -1;
+  }
+
+  // Payload generation
+  len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_MULTIPLE_COILS, addr, nb, ADU);
+  byte_count = (nb / 8) + ((nb % 8) ? 1 : 0);
+  ADU[len++] = byte_count;
+  
+  // Make booleans byte-array, data[], to bit-positioned byte-array
+  // and follows modbus format (Hi byte first)
+  for (int i=0; i<byte_count; i++) {
+    int bit;
+
+    bit = 0x01;
+    ADU[len] = 0;
+
+    while ((bit & 0xFF) && (bit_check++ < nb)) {
+      if (data[pos++])
+        ADU[len] |= bit;
+      else
+        ADU[len] &= ~bit;
+
+      bit = bit << 1;
+    }
+    len++;
+  }
+
+  len = _calcCRC(ADU, len);
+  
+  return len;
+}
+
