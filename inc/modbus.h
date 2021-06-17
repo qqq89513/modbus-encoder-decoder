@@ -158,6 +158,11 @@ int modbus_read_input_bits_gen(int unit, int addr, int nb, uint8_t *ADU);
 int modbus_read_registers_gen(int unit, int addr, int nb, uint8_t *ADU);
 int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU);
 
+int modbus_write_bit_gen(int unit, int addr, int status, uint8_t *ADU);
+int modbus_write_register_gen(int unit, int addr, const uint16_t value, uint8_t *ADU);
+int modbus_write_bits_gen(int unit, int addr, int nb, const uint8_t *data, uint8_t *ADU);
+int modbus_write_registers_gen(int unit, int addr, int nb, const uint16_t *data, uint8_t *ADU);
+
 /* From libmodbus
 int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);
 int modbus_read_input_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);

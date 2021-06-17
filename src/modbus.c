@@ -223,3 +223,33 @@ int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
   
   return len;
 }
+
+/** Generate a modbus RTU payload to wrtie single bit to coil status and stored it in ADU
+ * @param unit: Unit of slave, aka additional address
+ * @param addr: Start from this physical address (0~65535)
+ * @param status: 1 for true and 0 for false
+*/
+int modbus_write_bit_gen(int unit, int addr, int status, uint8_t *ADU){
+  int len = 0;  // The length of ADU
+  uint16_t value = status ? 0xFF00 : 0x0000; // 0xFF00 for true, 0x0000 for false
+  // Payload generation
+  len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_SINGLE_COIL, addr, value, ADU);
+  len = _calcCRC(ADU, len);
+  
+  return len;
+}
+
+/** Generate a modbus RTU payload to wrtie 2 bytes to single register and stored it in ADU
+ * @param unit: Unit of slave, aka additional address
+ * @param addr: Start from this physical address (0~65535)
+ * @param value: Value of 2 bytes to write to a single register
+*/
+int modbus_write_register_gen(int unit, int addr, const uint16_t value, uint8_t *ADU){
+  int len = 0;  // The length of ADU
+  // Payload generation
+  len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_SINGLE_REGISTER, addr, value, ADU);
+  len = _calcCRC(ADU, len);
+  
+  return len;
+}
+
