@@ -69,7 +69,7 @@ const char *modbus_strerror(int errnum) {
 
 
 /* Builds a RTU request header */
-static int _modbus_rtu_build_request_basis(int unit, int function, int addr, int nb, uint8_t *req){
+static int _modbus_rtu_build_request_basis(uint8_t unit, uint8_t function, uint16_t addr, uint8_t nb, uint8_t *req){
   req[0] = unit;
   req[1] = function;
   req[2] = addr >> 8;
@@ -119,12 +119,15 @@ void _error_print(modbus_t *ctx, const char *context)
   }
 }
 
-/** Generate a modbus RTU payload to read coils and stored it in ADU
+/** Generate a modbus RTU payload to read coils and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of bits(coils)
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_read_bits_gen(int unit, int addr, int nb, uint8_t *ADU){
+int modbus_read_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]){
   int len = 0;  // The length of ADU
 
   // Check parameters  
@@ -145,12 +148,15 @@ int modbus_read_bits_gen(int unit, int addr, int nb, uint8_t *ADU){
   return len;
 }
 
-/** Generate a modbus RTU payload to read discretes and stored it in ADU
+/** Generate a modbus RTU payload to read discretes and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of bits(discretes)
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_read_input_bits_gen(int unit, int addr, int nb, uint8_t *ADU){
+int modbus_read_input_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]){
   int len = 0;  // The length of ADU
 
   // Check parameters  
@@ -172,12 +178,15 @@ int modbus_read_input_bits_gen(int unit, int addr, int nb, uint8_t *ADU){
 
 }
 
-/** Generate a modbus RTU payload to read holding registers and stored it in ADU
+/** Generate a modbus RTU payload to read holding registers and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of words(registers, 2 bytes)
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_read_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
+int modbus_read_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]){
   int len = 0;  // The length of ADU
 
   // Check parameters  
@@ -198,12 +207,15 @@ int modbus_read_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
   return len;
 }
 
-/** Generate a modbus RTU payload to read input registers and stored it in ADU
+/** Generate a modbus RTU payload to read input registers and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of words(registers, 2 bytes)
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
+int modbus_read_input_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]){
   int len = 0;  // The length of ADU
 
   // Check parameters  
@@ -224,12 +236,15 @@ int modbus_read_input_registers_gen(int unit, int addr, int nb, uint8_t *ADU){
   return len;
 }
 
-/** Generate a modbus RTU payload to wrtie single bit to coil status and stored it in ADU
+/** Generate a modbus RTU payload to wrtie single bit to coil status and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param status: 1 for true and 0 for false
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_write_bit_gen(int unit, int addr, int status, uint8_t *ADU){
+int modbus_write_bit_gen(uint8_t unit, uint16_t addr, int status, uint8_t ADU[]){
   int len = 0;  // The length of ADU
   uint16_t value = status ? 0xFF00 : 0x0000; // 0xFF00 for true, 0x0000 for false
   // Payload generation
@@ -239,12 +254,15 @@ int modbus_write_bit_gen(int unit, int addr, int status, uint8_t *ADU){
   return len;
 }
 
-/** Generate a modbus RTU payload to wrtie 2 bytes to single register and stored it in ADU
+/** Generate a modbus RTU payload to wrtie 2 bytes to single register and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param value: Value of 2 bytes to write to a single register
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_write_register_gen(int unit, int addr, const uint16_t value, uint8_t *ADU){
+int modbus_write_register_gen(uint8_t unit, uint16_t addr, const uint16_t value, uint8_t ADU[]){
   int len = 0;  // The length of ADU
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_SINGLE_REGISTER, addr, value, ADU);
@@ -253,13 +271,16 @@ int modbus_write_register_gen(int unit, int addr, const uint16_t value, uint8_t 
   return len;
 }
 
-/** Generate a modbus RTU payload to write bits to multiple coil statuses and stored it in ADU
+/** Generate a modbus RTU payload to write bits to multiple coil statuses and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of bits (coils)
- * @param data[]: Bits to write. A byte array, 1 byte for 1 boolean
+ * @param data: Bits to write. A byte array, 1 byte for 1 boolean
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_write_bits_gen(int unit, int addr, int nb, const uint8_t data[], uint8_t *ADU){
+int modbus_write_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint8_t data[], uint8_t ADU[]){
   int byte_count;
   int len;
   int bit_check = 0;
@@ -304,13 +325,16 @@ int modbus_write_bits_gen(int unit, int addr, int nb, const uint8_t data[], uint
   return len;
 }
 
-/** Generate a modbus RTU payload to write words(word = 2 bytes) to multiple registers and stored it in ADU
+/** Generate a modbus RTU payload to write words(word = 2 bytes) to multiple registers and stored the payload in ADU
  * @param unit: Unit of slave, aka additional address
  * @param addr: Start from this physical address (0~65535)
  * @param nb: Quantity of words (registers)
  * @param data: Words (register values) to write. 1 word = 2 byte = sizeof(uint16_t)
+ * @param ADU: byte array to keep the payload
+ * 
+ * @param return: length of ADU[]. Accessible: ADU[0~retrun-1]
 */
-int modbus_write_registers_gen(int unit, int addr, int nb, const uint16_t data[], uint8_t *ADU){
+int modbus_write_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint16_t data[], uint8_t ADU[]){
   int len;
   int byte_count;
 
