@@ -304,3 +304,38 @@ int modbus_write_bits_gen(int unit, int addr, int nb, const uint8_t data[], uint
   return len;
 }
 
+/** Generate a modbus RTU payload to write words(word = 2 bytes) to multiple registers and stored it in ADU
+ * @param unit: Unit of slave, aka additional address
+ * @param addr: Start from this physical address (0~65535)
+ * @param nb: Quantity of words (registers)
+ * @param data: Words (register values) to write. 1 word = 2 byte = sizeof(uint16_t)
+*/
+int modbus_write_registers_gen(int unit, int addr, int nb, const uint16_t data[], uint8_t *ADU){
+  int len;
+  int byte_count;
+
+  // Check parameters  
+  if (nb > MODBUS_MAX_WRITE_REGISTERS) {
+    if (MODBUS_DEBUG) {
+      fprintf(stderr, "ERROR Writing too many bits (%d > %d)\n",
+              nb, MODBUS_MAX_WRITE_REGISTERS);
+    }
+    errno = EMBMDATA;
+    return -1;
+  }
+
+  // Payload header generation
+  len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_MULTIPLE_REGISTERS, addr, nb, ADU);
+  byte_count = nb * 2;
+  ADU[len++] = byte_count;
+
+  // Makes word-array to byte-array that's 2 times longer
+  for (int i = 0; i < nb; i++) {
+    ADU[len++] = data[i] >> 8;
+    ADU[len++] = data[i] & 0x00FF;
+  }
+
+  len = _calcCRC(ADU, len);
+  
+  return len;
+}
