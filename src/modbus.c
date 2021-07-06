@@ -80,26 +80,42 @@ static int _modbus_rtu_build_request_basis(uint8_t unit, uint8_t function, uint1
   return _MODBUS_RTU_PRESET_REQ_LENGTH;
 }
 
+/** This method calculates CRC-16/modus and returns in (hi-byte, lo-byte)
+ * @param buf[]: Target to calculates crc from
+ * @param len: The length of buf[]
+ * @return CRC-16/modbus: (hi-byte, lo-byte)
+ *         CRC-Hi = return >> 8
+ *         CRC-Lo = return & 0x00FF
+ */
+static uint16_t _calc_CRC(uint8_t buf[], uint8_t len){
+  unsigned int crc, flag;
+  crc = 0xFFFF;
+  for(uint8_t i = 0; i < len; i++)
+  {
+    crc = crc ^ buf[i];
+    for(uint8_t j = 1; j <= 8; j++)
+    {
+      flag = crc & 0x0001;
+      crc >>=1;
+      if (flag)
+        crc ^= 0xA001;
+    }
+  }
+  return crc;
+}
+
 /** This method calculates CRC-16/modus and concatenate it to the end of buf[]
  * @param buf[]: Make sure that buf has the length of len+2. 
  *               The last 2 bytes are for (CRC_L, CRC_H)
  * @param len: The length of payload consist in buf[]
  * @return len+2, the length of entire packet, including crc checksum
  */
-static int _calcCRC(uint8_t buf[], uint8_t len){
-  unsigned int temp, flag;
-  temp = 0xFFFF;
-  for(uint8_t i = 0; i < len; i++)
-  {
-    temp = temp ^ buf[i];
-    for(uint8_t j = 1; j <= 8; j++)
-    {
-      flag = temp & 0x0001;
-      temp >>=1;
-      if (flag)
-        temp ^= 0xA001;
-    }
-  }
+static int _CRC_concatenate(uint8_t buf[], uint8_t len){
+  
+  // Calculate CRC-16/modbus
+  unsigned int temp;
+  temp = _calc_CRC(buf, len);
+  
   // Concatenate crc to the end of buf[]
   buf[len]    = temp & 0x00FF;    // CRC-Lo
   buf[len+1]  = temp >> 8;        // CRC-Hi
@@ -143,7 +159,7 @@ int modbus_read_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[])
 
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_READ_COILS, addr, nb, ADU);
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
@@ -172,7 +188,7 @@ int modbus_read_input_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t 
 
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_READ_DISCRETE_INPUTS, addr, nb, ADU);
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 
@@ -202,7 +218,7 @@ int modbus_read_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t A
 
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_READ_HOLDING_REGISTERS, addr, nb, ADU);
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
@@ -231,7 +247,7 @@ int modbus_read_input_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uin
 
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_READ_INPUT_REGISTERS, addr, nb, ADU);
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
@@ -249,7 +265,7 @@ int modbus_write_bit_gen(uint8_t unit, uint16_t addr, int status, uint8_t ADU[])
   uint16_t value = status ? 0xFF00 : 0x0000; // 0xFF00 for true, 0x0000 for false
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_SINGLE_COIL, addr, value, ADU);
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
@@ -266,7 +282,7 @@ int modbus_write_register_gen(uint8_t unit, uint16_t addr, const uint16_t value,
   int len = 0;  // The length of ADU
   // Payload generation
   len = _modbus_rtu_build_request_basis(unit, MODBUS_FC_WRITE_SINGLE_REGISTER, addr, value, ADU);
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
@@ -320,7 +336,7 @@ int modbus_write_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint8_t
     len++;
   }
 
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
@@ -359,7 +375,7 @@ int modbus_write_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, const ui
     ADU[len++] = data[i] & 0x00FF;
   }
 
-  len = _calcCRC(ADU, len);
+  len = _CRC_concatenate(ADU, len);
   
   return len;
 }
