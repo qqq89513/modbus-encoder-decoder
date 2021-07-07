@@ -4,11 +4,12 @@
 #include "modbus.h"
 
 int main(){
+
+  /* Request generation test */
   uint8_t payload[128];
   // uint8_t data_bits[] = {1,0,0,0,0,1,0,0, 0,0,1,0,0,0,0,1};
   uint16_t data_regs[] = {0xABCD, 0xEF01, 0x1234};
   int len = 0;
-  
   // len = modbus_read_bits_gen(0, 0x1234, 0x45, payload);
   // len = modbus_read_input_bits_gen(0, 0x1234, 0x45, payload);
   // len = modbus_read_registers_gen(0, 0x1234, 0x45, payload);
@@ -23,6 +24,20 @@ int main(){
     printf("%02X", payload[i]);
   }
   printf("\n");
+
+  /* Response parser test*/
+  uint8_t response[16] = {0x01, 0x05, 0x02, 0x34, 0xFF, 0x00, 0xCC, 0x4C};
+  int ret_code = 0;
+  modbusframe_t res;
+  res.ADU = response;
+  ret_code = modbus_ADU_parser(&res);
+  printf("response[]=0x");
+  for(int i=0; i<res.ADU_len; i++){
+    printf("%02X", response[i]);
+  }
+  printf("\n");
+  printf("ret_code=%d, unit=%02X, fn_code=%02X, \n", 
+          ret_code, res.unit, res.fn_code);
 
   printf("The end of program.");
 }

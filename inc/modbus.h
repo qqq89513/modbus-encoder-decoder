@@ -103,6 +103,7 @@ enum {
     MODBUS_EXCEPTION_MAX
 };
 
+// Modbus exception code
 #define EMBXILFUN  (MODBUS_ENOBASE + MODBUS_EXCEPTION_ILLEGAL_FUNCTION)
 #define EMBXILADD  (MODBUS_ENOBASE + MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS)
 #define EMBXILVAL  (MODBUS_ENOBASE + MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE)
@@ -150,6 +151,21 @@ typedef enum
     MODBUS_ERROR_RECOVERY_PROTOCOL      = (1<<2)
 } modbus_error_recovery_mode;
 
+// TODO: finish this data type definition
+typedef struct modbusdata_t {
+    uint8_t *bits;
+    uint8_t *registers;
+} modbusdata_t;
+
+typedef struct modbusframe_t {
+    uint8_t unit;
+    uint8_t fn_code;
+    uint8_t ADU_len; // ADU length in bytes
+    uint8_t *ADU;
+    modbusdata_t *data;
+} modbusframe_t ;
+
+
 const char *modbus_strerror(int errnum);
 
 // Functions for payload generation -----------------------------
@@ -157,11 +173,13 @@ int modbus_read_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[])
 int modbus_read_input_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]);
 int modbus_read_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]);
 int modbus_read_input_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]);
-
 int modbus_write_bit_gen(uint8_t unit, uint16_t addr, int status, uint8_t ADU[]);
 int modbus_write_register_gen(uint8_t unit, uint16_t addr, const uint16_t value, uint8_t ADU[]);
 int modbus_write_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint8_t data[], uint8_t ADU[]);
 int modbus_write_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint16_t data[], uint8_t ADU[]);
+
+// Function to parse the payload received
+int modbus_ADU_parser(modbusframe_t *frame);
 
 /* From libmodbus
 int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);

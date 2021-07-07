@@ -32,36 +32,24 @@ typedef enum {
 
 const char *modbus_strerror(int errnum) {
   switch (errnum) {
-    case EMBXILFUN:
-      return "Illegal function";
-    case EMBXILADD:
-      return "Illegal data address";
-    case EMBXILVAL:
-      return "Illegal data value";
-    case EMBXSFAIL:
-      return "Slave device or server failure";
-    case EMBXACK:
-      return "Acknowledge";
-    case EMBXSBUSY:
-      return "Slave device or server is busy";
-    case EMBXNACK:
-      return "Negative acknowledge";
-    case EMBXMEMPAR:
-      return "Memory parity error";
-    case EMBXGPATH:
-      return "Gateway path unavailable";
-    case EMBXGTAR:
-      return "Target device failed to respond";
-    case EMBBADCRC:
-      return "Invalid CRC";
-    case EMBBADDATA:
-      return "Invalid data";
-    case EMBBADEXC:
-      return "Invalid exception code";
-    case EMBMDATA:
-      return "Too many data";
-    case EMBBADSLAVE:
-      return "Response not from requested slave";
+    // Modbus error code
+    case EMBXILFUN:     return "Illegal function";
+    case EMBXILADD:     return "Illegal data address";
+    case EMBXILVAL:     return "Illegal data value";
+    case EMBXSFAIL:     return "Slave device or server failure";
+    case EMBXACK:       return "Acknowledge";
+    case EMBXSBUSY:     return "Slave device or server is busy";
+    case EMBXNACK:      return "Negative acknowledge";
+    case EMBXMEMPAR:    return "Memory parity error";
+    case EMBXGPATH:     return "Gateway path unavailable";
+    case EMBXGTAR:      return "Target device failed to respond";
+    
+    // Native error code
+    case EMBBADCRC:     return "Invalid CRC";
+    case EMBBADDATA:    return "Invalid data";
+    case EMBBADEXC:     return "Invalid exception code";
+    case EMBMDATA:      return "Too many data";
+    case EMBBADSLAVE:   return "Response not from requested slave";
     default:
       return strerror(errnum);
     }
@@ -379,3 +367,67 @@ int modbus_write_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, const ui
   
   return len;
 }
+
+// Return 0 if ok, -1 on if error, exception code otherwise
+int modbus_ADU_parser(modbusframe_t *frame){
+
+  unsigned int crc_expect = 0;
+  unsigned int crc_receive = 0;
+
+  frame->unit    = frame->ADU[0];
+  frame->fn_code = frame->ADU[1];
+
+  // Check for exception function code
+  if(frame->fn_code & 0x80){
+    frame->ADU_len = 5;  // unit(1), fn_code(1), exeception code(1), crc(2)
+    // TODO: Check for CRC
+    errno = MODBUS_ENOBASE + frame->ADU[2];
+    if(MODBUS_DEBUG){
+      fprintf(stderr, "ERROR Exception code 0x%02X: %s, function code:0x%X\n", 
+              frame->ADU[2], modbus_strerror(errno), frame->fn_code & 0x7F);
+    }
+    return frame->ADU[2]; // The #2 byte in ADU is exception code
+  }
+
+  // Parse ADU differently based on function code
+  switch(frame->fn_code) {
+    // Reading response
+    case MODBUS_FC_READ_COILS: break;
+    case MODBUS_FC_READ_DISCRETE_INPUTS: break;
+    case MODBUS_FC_READ_HOLDING_REGISTERS: break;
+    case MODBUS_FC_READ_INPUT_REGISTERS: break;
+
+    // Writing response
+    case MODBUS_FC_WRITE_SINGLE_COIL:
+      frame->ADU_len = 5;  // fn_code(1), output addr(2), output value(2)
+      break;
+    case MODBUS_FC_WRITE_SINGLE_REGISTER:
+      frame->ADU_len = 5;  // fn_code(1), reg addr(2), reg value(2)
+      break;
+    case MODBUS_FC_WRITE_MULTIPLE_COILS:
+      frame->ADU_len = 5;  // fn_code(1), start addr(2), quantity(2)
+      break;
+    case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
+      frame->ADU_len = 5;  // fn_code(1), start addr(2), quantity(2)
+      break;
+
+    default:
+      if(MODBUS_DEBUG)
+        fprintf(stderr, "FATAL Unknow function code:0x%X\n", frame->fn_code);
+  }
+  frame->ADU_len += 3; // 3 more bytes: unit(1), CRC(2)
+  
+  // Check for crc
+  crc_expect = _calc_CRC(frame->ADU, frame->ADU_len-2); // -2 because the last 2 byte is crc received
+  crc_receive = frame->ADU[frame->ADU_len-1]<<8 | frame->ADU[frame->ADU_len-2] ;
+  if(crc_expect != crc_receive){ // CRC error
+    errno = EMBBADCRC;
+    if(MODBUS_DEBUG)
+      fprintf(stderr, "ERROR Invalid CRC. Expect 0x%X, got 0x%X\n",
+              crc_expect, crc_receive);
+    return -1;
+  }
+
+  return 0;
+}
+
