@@ -152,7 +152,8 @@ typedef enum
 } modbus_error_recovery_mode;
 
 // TODO01: Crate data type for modbus_xxx_gen
-// TODO02: Combine datatype from TODO01 and make them 1 datatype
+// TODO02: Combine datatype from TODO01 and _res_ datatype to 1 datatype
+// TODO03: Implement function to init datatype finish at TODO02
 // Datatype to pharse response
 typedef struct modbus_res_data_t {
     uint8_t *bits;
