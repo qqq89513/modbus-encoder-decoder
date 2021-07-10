@@ -381,7 +381,7 @@ int modbus_ADU_parser(modbus_res_frame_t *frame){
   if(frame->fn_code & 0x80){
     frame->ADU_len = 5;  // unit(1), fn_code(1), exeception code(1), crc(2)
   }
-  else{  
+  else{
     switch(frame->fn_code) { // get PDU length
       // Reading response
       case MODBUS_FC_READ_COILS:
@@ -405,6 +405,7 @@ int modbus_ADU_parser(modbus_res_frame_t *frame){
     }
     frame->ADU_len += 3; // 3 more bytes: unit(1), CRC(2)
   }
+  
   // Check for crc
   crc_expect = _calc_CRC(frame->ADU, frame->ADU_len-2); // -2 because the last 2 byte is crc received
   crc_receive = frame->ADU[frame->ADU_len-1]<<8 | frame->ADU[frame->ADU_len-2] ;
@@ -424,6 +425,29 @@ int modbus_ADU_parser(modbus_res_frame_t *frame){
               frame->ADU[2], modbus_strerror(errno), frame->fn_code & 0x7F);
     }
     return frame->ADU[2]; // The #2 byte in ADU is exception code
+  }
+
+  // Read values from ADU if it's a read request
+  switch (frame->fn_code) {
+    case MODBUS_FC_READ_COILS:
+    case MODBUS_FC_READ_DISCRETE_INPUTS:
+      // TODO: implementation
+      break;
+    case MODBUS_FC_READ_HOLDING_REGISTERS:
+    case MODBUS_FC_READ_INPUT_REGISTERS:
+      frame->num_reads = frame->ADU[2]/2;
+      uint16_t *dest = frame->data->registers;  // a shorter expression
+      uint8_t *rsp = frame->ADU;                // a shorter expression
+
+      for (int i = 0; i < frame->num_reads; i++) {
+        // shift reg hi_byte to temp OR with lo_byte
+        // i*2 because 1 reg is 2 bytes
+        dest[i] = (rsp[3 + (i*2)] << 8) |
+                   rsp[4 + (i*2)];
+      }
+      break;
+
+    default:;
   }
 
   return 0;
