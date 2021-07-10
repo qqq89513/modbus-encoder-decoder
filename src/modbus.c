@@ -378,29 +378,33 @@ int modbus_ADU_parser(modbusframe_t *frame){
   frame->fn_code = frame->ADU[1];
 
   // Get total ADU length
-  switch(frame->fn_code) { // get PDU length
-    // Reading response
-    case MODBUS_FC_READ_COILS:
-    case MODBUS_FC_READ_DISCRETE_INPUTS:
-    case MODBUS_FC_READ_HOLDING_REGISTERS:
-    case MODBUS_FC_READ_INPUT_REGISTERS:
-      frame->ADU_len = 2 + frame->ADU[2]; // fn_code(1), byte_cnt(1), bytes(N)
-      break;
-
-    // Writing response
-    case MODBUS_FC_WRITE_SINGLE_COIL:
-    case MODBUS_FC_WRITE_SINGLE_REGISTER:
-    case MODBUS_FC_WRITE_MULTIPLE_COILS:
-    case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
-      frame->ADU_len = 5;  // fn_code(1), start addr(2), quantity(2)
-      break;
-
-    default:
-      if(MODBUS_DEBUG)
-        fprintf(stderr, "FATAL Unknow function code:0x%X\n", frame->fn_code);
+  if(frame->fn_code & 0x80){
+    frame->ADU_len = 5;  // unit(1), fn_code(1), exeception code(1), crc(2)
   }
-  frame->ADU_len += 3; // 3 more bytes: unit(1), CRC(2)
-  
+  else{  
+    switch(frame->fn_code) { // get PDU length
+      // Reading response
+      case MODBUS_FC_READ_COILS:
+      case MODBUS_FC_READ_DISCRETE_INPUTS:
+      case MODBUS_FC_READ_HOLDING_REGISTERS:
+      case MODBUS_FC_READ_INPUT_REGISTERS:
+        frame->ADU_len = 2 + frame->ADU[2]; // fn_code(1), byte_cnt(1), bytes(N)
+        break;
+
+      // Writing response
+      case MODBUS_FC_WRITE_SINGLE_COIL:
+      case MODBUS_FC_WRITE_SINGLE_REGISTER:
+      case MODBUS_FC_WRITE_MULTIPLE_COILS:
+      case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
+        frame->ADU_len = 5;  // fn_code(1), start addr(2), quantity(2)
+        break;
+
+      default:
+        if(MODBUS_DEBUG)
+          fprintf(stderr, "FATAL Unknow function code:0x%X\n", frame->fn_code);
+    }
+    frame->ADU_len += 3; // 3 more bytes: unit(1), CRC(2)
+  }
   // Check for crc
   crc_expect = _calc_CRC(frame->ADU, frame->ADU_len-2); // -2 because the last 2 byte is crc received
   crc_receive = frame->ADU[frame->ADU_len-1]<<8 | frame->ADU[frame->ADU_len-2] ;
@@ -414,11 +418,9 @@ int modbus_ADU_parser(modbusframe_t *frame){
 
   // Check for exception function code
   if(frame->fn_code & 0x80){
-    frame->ADU_len = 5;  // unit(1), fn_code(1), exeception code(1), crc(2)
-    // TODO: Check for CRC
     errno = MODBUS_ENOBASE + frame->ADU[2];
     if(MODBUS_DEBUG){
-      fprintf(stderr, "ERROR Exception code 0x%02X: %s, function code:0x%X\n", 
+      fprintf(stderr, "ERROR Exception code 0x%02X: %s, function code:0x%02X\n", 
               frame->ADU[2], modbus_strerror(errno), frame->fn_code & 0x7F);
     }
     return frame->ADU[2]; // The #2 byte in ADU is exception code

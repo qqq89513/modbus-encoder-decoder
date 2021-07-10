@@ -27,18 +27,28 @@ int main(){
 
   /* Response parser test*/
   // uint8_t response[16] = {0x02, 0x02, 0x03, 0xac, 0xdb, 0x35, 0x22, 0xbb};
-  uint8_t response[16] = {0x02, 0x04, 0x02, 0x00, 0x00, 0xfd, 0x30};
+  // uint8_t response[16] = {0x02, 0x04, 0x02, 0x00, 0x00, 0xfd, 0x20};
+  uint8_t response[16] ={0x01, 0x81, 0x01, 0x81, 0x90};
   int ret_code = 0;
   modbusframe_t res;
   res.ADU = response;
   ret_code = modbus_ADU_parser(&res);
-  printf("response[]=0x");
-  for(int i=0; i<res.ADU_len; i++){
-    printf("%02X", response[i]);
+  switch (ret_code) {
+  case 0:
+    printf("response[]=0x");
+    for(int i=0; i<res.ADU_len; i++)
+      printf("%02X", response[i]);
+    printf("\n");
+    printf("ret_code=%d, unit=%02X, fn_code=%02X, \n", 
+            ret_code, res.unit, res.fn_code);
+    break;
+  case -1:
+    printf("Error CRC incorrect.\n");
+    break;
+  default:
+    printf("Exception response \"%s\", exeception code=%d\n", 
+      modbus_strerror(MODBUS_ENOBASE+ret_code), ret_code);
   }
-  printf("\n");
-  printf("ret_code=%d, unit=%02X, fn_code=%02X, \n", 
-          ret_code, res.unit, res.fn_code);
 
   printf("The end of program.");
 }
