@@ -377,36 +377,20 @@ int modbus_ADU_parser(modbusframe_t *frame){
   frame->unit    = frame->ADU[0];
   frame->fn_code = frame->ADU[1];
 
-  // Check for exception function code
-  if(frame->fn_code & 0x80){
-    frame->ADU_len = 5;  // unit(1), fn_code(1), exeception code(1), crc(2)
-    // TODO: Check for CRC
-    errno = MODBUS_ENOBASE + frame->ADU[2];
-    if(MODBUS_DEBUG){
-      fprintf(stderr, "ERROR Exception code 0x%02X: %s, function code:0x%X\n", 
-              frame->ADU[2], modbus_strerror(errno), frame->fn_code & 0x7F);
-    }
-    return frame->ADU[2]; // The #2 byte in ADU is exception code
-  }
-
-  // Parse ADU differently based on function code
-  switch(frame->fn_code) {
+  // Get total ADU length
+  switch(frame->fn_code) { // get PDU length
     // Reading response
-    case MODBUS_FC_READ_COILS: break;
-    case MODBUS_FC_READ_DISCRETE_INPUTS: break;
-    case MODBUS_FC_READ_HOLDING_REGISTERS: break;
-    case MODBUS_FC_READ_INPUT_REGISTERS: break;
+    case MODBUS_FC_READ_COILS:
+    case MODBUS_FC_READ_DISCRETE_INPUTS:
+    case MODBUS_FC_READ_HOLDING_REGISTERS:
+    case MODBUS_FC_READ_INPUT_REGISTERS:
+      frame->ADU_len = 2 + frame->ADU[2]; // fn_code(1), byte_cnt(1), bytes(N)
+      break;
 
     // Writing response
     case MODBUS_FC_WRITE_SINGLE_COIL:
-      frame->ADU_len = 5;  // fn_code(1), output addr(2), output value(2)
-      break;
     case MODBUS_FC_WRITE_SINGLE_REGISTER:
-      frame->ADU_len = 5;  // fn_code(1), reg addr(2), reg value(2)
-      break;
     case MODBUS_FC_WRITE_MULTIPLE_COILS:
-      frame->ADU_len = 5;  // fn_code(1), start addr(2), quantity(2)
-      break;
     case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
       frame->ADU_len = 5;  // fn_code(1), start addr(2), quantity(2)
       break;
@@ -426,6 +410,18 @@ int modbus_ADU_parser(modbusframe_t *frame){
       fprintf(stderr, "ERROR Invalid CRC. Expect 0x%X, got 0x%X\n",
               crc_expect, crc_receive);
     return -1;
+  }
+
+  // Check for exception function code
+  if(frame->fn_code & 0x80){
+    frame->ADU_len = 5;  // unit(1), fn_code(1), exeception code(1), crc(2)
+    // TODO: Check for CRC
+    errno = MODBUS_ENOBASE + frame->ADU[2];
+    if(MODBUS_DEBUG){
+      fprintf(stderr, "ERROR Exception code 0x%02X: %s, function code:0x%X\n", 
+              frame->ADU[2], modbus_strerror(errno), frame->fn_code & 0x7F);
+    }
+    return frame->ADU[2]; // The #2 byte in ADU is exception code
   }
 
   return 0;
