@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "modbus.h"
-
+// TODO: make examples into functions
 int main(){
 
   /* Request generation test */
@@ -30,7 +30,7 @@ int main(){
   // uint8_t response[16] = {0x02, 0x04, 0x02, 0x00, 0x00, 0xfd, 0x20};
   uint8_t response[16] ={0x01, 0x81, 0x01, 0x81, 0x90};
   int ret_code = 0;
-  modbusframe_t res;
+  modbus_res_frame_t res;
   res.ADU = response;
   ret_code = modbus_ADU_parser(&res);
   switch (ret_code) {

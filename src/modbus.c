@@ -369,7 +369,7 @@ int modbus_write_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, const ui
 }
 
 // Return 0 if ok, -1 on if error, exception code otherwise
-int modbus_ADU_parser(modbusframe_t *frame){
+int modbus_ADU_parser(modbus_res_frame_t *frame){
 
   unsigned int crc_expect = 0;
   unsigned int crc_receive = 0;

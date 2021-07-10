@@ -151,19 +151,22 @@ typedef enum
     MODBUS_ERROR_RECOVERY_PROTOCOL      = (1<<2)
 } modbus_error_recovery_mode;
 
-// TODO: finish this data type definition
-typedef struct modbusdata_t {
+// TODO01: Crate data type for modbus_xxx_gen
+// TODO02: Combine datatype from TODO01 and make them 1 datatype
+// Datatype to pharse response
+typedef struct modbus_res_data_t {
     uint8_t *bits;
-    uint8_t *registers;
-} modbusdata_t;
-
-typedef struct modbusframe_t {
+    uint16_t *registers;
+} modbus_res_data_t;
+typedef struct modbus_res_frame_t {
     uint8_t unit;
     uint8_t fn_code;
-    uint8_t ADU_len; // ADU length in bytes
     uint8_t *ADU;
-    modbusdata_t *data;
-} modbusframe_t ;
+    uint8_t ADU_len;        // ADU length in bytes
+    uint8_t num_reads;      // unit: bit for coils and discrete, word(2 byte) for registers
+    uint8_t exception_code; // 0 if no exception
+    modbus_res_data_t *data;
+} modbus_res_frame_t ;
 
 
 const char *modbus_strerror(int errnum);
@@ -179,7 +182,7 @@ int modbus_write_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint8_t
 int modbus_write_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, const uint16_t data[], uint8_t ADU[]);
 
 // Function to parse the payload received
-int modbus_ADU_parser(modbusframe_t *frame);
+int modbus_ADU_parser(modbus_res_frame_t *frame);
 
 /* From libmodbus
 int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest);
