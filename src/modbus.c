@@ -428,22 +428,35 @@ int modbus_ADU_parser(modbus_res_frame_t *frame){
   }
 
   // Read values from ADU if it's a read request
+  uint16_t *dest_reg = frame->data->registers;  // a shorter expression
+  uint8_t  *dest_bit = frame->data->bits;       // a shorter expression
+  uint8_t *rsp = frame->ADU;                    // a shorter expression
+  int index_bits = 0;     // Use for read coils and discrete inputs, dest_bit[index_bits]
+  int offset = 3;         // unit(1), fn_code(1), bytes_cnt(1)
+  int offset_end;
   switch (frame->fn_code) {
     case MODBUS_FC_READ_COILS:
     case MODBUS_FC_READ_DISCRETE_INPUTS:
-      // TODO: implementation
+      offset_end = frame->ADU_len-2; // -2 due to CRC
+      // Extract 8 bits from each byte
+      for (int i=offset; i<offset_end; i++) {
+        for (int bit = 0x01; (bit & 0xff) && (index_bits < frame->num_reads);) {
+          // This loop stops either 8 bits read or the # of total bits read exceeds specified
+          dest_bit[index_bits++] = (rsp[i] & bit) ? TRUE : FALSE;
+          bit = bit << 1;
+        }
+      }
       break;
+
     case MODBUS_FC_READ_HOLDING_REGISTERS:
     case MODBUS_FC_READ_INPUT_REGISTERS:
       frame->num_reads = frame->ADU[2]/2;
-      uint16_t *dest = frame->data->registers;  // a shorter expression
-      uint8_t *rsp = frame->ADU;                // a shorter expression
-
-      for (int i = 0; i < frame->num_reads; i++) {
+      // Extract received bytes into registers (2 bytes as 1 register)
+      for (int i=0; i < frame->num_reads; i++) {
         // shift reg hi_byte to temp OR with lo_byte
         // i*2 because 1 reg is 2 bytes
-        dest[i] = (rsp[3 + (i*2)] << 8) |
-                   rsp[4 + (i*2)];
+        dest_reg[i] = (rsp[3 + (i*2)] << 8) |
+                       rsp[4 + (i*2)];
       }
       break;
 

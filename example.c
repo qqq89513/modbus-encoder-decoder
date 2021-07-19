@@ -28,22 +28,36 @@ int main(){
   /* Response parser test*/
   // uint8_t response[16] = {0x01, 0x81, 0x01, 0x81, 0x90}; // Exception: Illegal function
   // uint8_t response[16] = {0x02, 0x03, 0x06, 0x02, 0x2B, 0x00, 0x00, 0x00, 0x64, 0x11, 0x8a}; // Read holding registers
-  uint8_t response[16] = {0x02, 0x04, 0x08, 0x00, 0x0a, 0x12, 0xfe, 0x12, 0xda, 0x7a, 0x8a, 0x2d, 0xab}; // Read input registers
+  // uint8_t response[16] = {0x02, 0x04, 0x08, 0x00, 0x0a, 0x12, 0xfe, 0x12, 0xda, 0x7a, 0x8a, 0x2d, 0xab}; // Read input registers
+  // uint8_t response[16] = {0x12, 0x01, 0x03, 0xcd, 0x68, 0x05, 0x40, 0xd1}; // Read Coils
+  uint8_t response[16] = {0x32, 0x02, 0x03, 0xac, 0xdb, 0x35, 0x27, 0x4b}; // Read discrete inputs
   int ret_code = 0;
   modbus_res_frame_t res;
   modbus_res_data_t data_dest;
-  uint8_t bits[10];
+  uint8_t bits[64];
   uint16_t regs[10];
   data_dest.bits = bits;
   data_dest.registers = regs;
   res.data = &data_dest;
 
+  res.num_reads = 24;
+
   res.ADU = response;
   ret_code = modbus_ADU_parser(&res);
   switch (ret_code) {
   case 0:
-    printf("Registers[]=");
-    for(int i=0; i<res.num_reads; i++)    printf("0x%04X ", res.data->registers[i]);
+    // Read registers test
+    // printf("Registers[]=");
+    // for(int i=0; i<res.num_reads; i++)    printf("0x%04X ", res.data->registers[i]);
+    // printf("\nresponse[]=0x");
+    // for(int i=0; i<res.ADU_len; i++)      printf("%02X", response[i]);
+    // printf("\n");
+    // printf("ret_code=%d, unit=%02X, fn_code=%02X, \n", 
+    //         ret_code, res.unit, res.fn_code);
+
+    // Read bits test
+    printf("Bits[]=");
+    for(int i=0; i<res.num_reads; i++)    printf("%d ", res.data->bits[i]);
     printf("\nresponse[]=0x");
     for(int i=0; i<res.ADU_len; i++)      printf("%02X", response[i]);
     printf("\n");
