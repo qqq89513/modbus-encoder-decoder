@@ -173,6 +173,7 @@ typedef struct modbus_res_frame_t {
 const char *modbus_strerror(int errnum);
 
 // Functions for payload generation -----------------------------
+
 int modbus_read_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]);
 int modbus_read_input_bits_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]);
 int modbus_read_registers_gen(uint8_t unit, uint16_t addr, uint8_t nb, uint8_t ADU[]);

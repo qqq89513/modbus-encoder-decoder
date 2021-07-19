@@ -57,7 +57,7 @@ const char *modbus_strerror(int errnum) {
 
 
 /* Builds a RTU request header */
-static int _modbus_rtu_build_request_basis(uint8_t unit, uint8_t function, uint16_t addr, uint8_t nb, uint8_t *req){
+static int _modbus_rtu_build_request_basis(uint8_t unit, uint8_t function, uint16_t addr, uint16_t nb, uint8_t *req){
   req[0] = unit;
   req[1] = function;
   req[2] = addr >> 8;
